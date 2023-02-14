@@ -11,6 +11,7 @@
 
 <body>
     <div id="reader" width="600px"></div>
+    <div id="reader1" width="600px"></div>
 
     <!-- <input type="file" id="qr-input-file" accept="image/*"> -->
 
@@ -21,23 +22,44 @@
     <div id="label"></div>
     <!-- <input type="file" id="xml-input-file" accept="*"> -->
     <script>
-        let html5QrcodeScanner = new Html5QrcodeScanner("reader",
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-        /* verbose= */ false);
+        // let html5QrcodeScanner = new Html5QrcodeScanner("reader",
+        //     { fps: 10, qrbox: { width: 250, height: 250 } },
+        // /* verbose= */ false);
 
-        function onScanSuccess(decodedText, decodedResult) {
-            // handle the scanned code as you like, for example:
-            console.log(`Code matched = ${decodedText}`, decodedResult);
-            html5QrcodeScanner.clear()
-        }
+        // function onScanSuccess(decodedText, decodedResult) {
+        //     // handle the scanned code as you like, for example:
+        //     console.log(`Code matched = ${decodedText}`, decodedResult);
+        //     html5QrcodeScanner.clear()
+        // }
 
-        function onScanFailure(error) {
-            // handle scan failure, usually better to ignore and keep scanning.
-            // for example:
-            console.log(`Code scan error = ${error}`);
-        }
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        // function onScanFailure(error) {
+        //     // handle scan failure, usually better to ignore and keep scanning.
+        //     // for example:
+        //     console.log(`Code scan error = ${error}`);
+        // }
+        // html5QrcodeScanner.render(onScanSuccess, onScanFailure);
 
+        const html5QrCode1 = new Html5Qrcode("reader1", true);
+        html5QrCode1.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,    // Optional, frame per seconds for qr code scanning
+                qrbox: { width: 250, height: 250 }  // Optional, if you want bounded box UI
+            },
+            (decodedText, decodedResult) => {
+                console.log("OM ~ file: index.html:49 ~ decodedText, decodedResult", decodedText, decodedResult);
+                document.getElementById("label").textContent = decodedText, decodedResult
+                // do something when code is read
+            },
+            (errorMessage) => {
+                document.getElementById("label").textContent = "errorMessage " + errorMessage
+
+                console.log("OM ~ file: index.html:53 ~ errorMessage", errorMessage);
+                // parse error, ignore it.
+            })
+            .catch((err) => {
+                // Start failed, handle it.
+            });
 
 
         let qrData = ''
@@ -67,7 +89,7 @@
 
         async function verify() {
             console.log("OM ~ file: qr.html:69 ~ verify ~ verify");
-            const res = await fetch('http://localhost:4000/verify-qr', {
+            const res = await fetch('/verify-qr', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8'
