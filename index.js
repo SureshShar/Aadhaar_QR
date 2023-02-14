@@ -223,11 +223,13 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use(cors())
 
+app.use(express.static('public'))
+
 var options = {
     root: path.join(__dirname)
 };
 app.get("/", (req, res) => {
-    res.sendFile("qr.html", options)
+    res.sendFile("index.html", options)
 })
 
 app.post('/verify-qr', (req, res) => {
