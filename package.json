@@ -8,6 +8,6 @@
     "pako": "^2.1.0"
   },
   "scripts": {
-    "start": "node qr-verify.js"
+    "start": "node index.js"
   }
 }
