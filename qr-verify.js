@@ -1,0 +1,246 @@
+const BigInt = require("big-integer");
+const pako = require("pako");
+const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
+var bodyParser = require('body-parser')
+const cors = require("cors")
+
+function convertBase10ToBigInt(value) {
+    return BigInt(value);
+}
+
+function convertBigIntToByteArray(bigInt) {
+    let byteArray = Array.from(bigInt.toArray(256).value);
+    return byteArray;
+}
+
+function decompressByteArray(byteArray) {
+    let decompressedArray = pako.inflate(byteArray);
+    return decompressedArray;
+}
+
+function findDelimiter(byteArray, startIndex) {
+    let delimiterIndex = byteArray.indexOf(255, startIndex);
+    return delimiterIndex;
+}
+
+function readAndConvertToString(byteArray, startIndex, endIndex) {
+    let stringBytes = byteArray.slice(startIndex, endIndex);
+    let decoder = new TextDecoder("ISO-8859-1");
+    let stringValue = decoder.decode(stringBytes);
+    return stringValue;
+}
+
+function readEmailMobilePresentBit(byteArray) {
+    let delimiterIndex = findDelimiter(byteArray, 0);
+    let emailMobilePresentBit = readAndConvertToString(byteArray, 0, delimiterIndex);
+    return emailMobilePresentBit;
+}
+
+function readSignature(byteArray) {
+    let signatureStartIndex = byteArray.length - 256;
+    let signature = byteArray.slice(signatureStartIndex, byteArray.length);
+    return signature;
+}
+
+function convertByteToHexa(value) {
+    return Buffer.from(value).toString('hex');
+}
+
+function readMobileEmail(byteArray, emailMobilePresentBit) {
+    let emailMobile = {};
+    if (emailMobilePresentBit === "3") {
+        let mobileStartIndex = byteArray.length - 256 - 32;
+        let emailStartIndex = byteArray.length - 256 - 32 - 32;
+        emailMobile.mobile = convertByteToHexa(byteArray.slice(mobileStartIndex, byteArray.length - 256));
+        emailMobile.email = convertByteToHexa(byteArray.slice(emailStartIndex, mobileStartIndex));
+    } else if (emailMobilePresentBit === "2") {
+        let mobileStartIndex = byteArray.length - 256 - 32;
+        emailMobile.mobile = convertByteToHexa(byteArray.slice(mobileStartIndex, byteArray.length - 256))
+    } else if (emailMobilePresentBit === "1") {
+        let emailStartIndex = byteArray.length - 256 - 32;
+        emailMobile.email = convertByteToHexa(byteArray.slice(emailStartIndex, byteArray.length - 256));
+    }
+    return emailMobile;
+}
+
+
+
+
+// const data = `312967785877640362602443824862290284533575700321987166723433998546652998921263199913727518843512103395162782460058086996126162296260473582577908308868847370336179865054496073255501332661199616847102740956617120731856282490335078312874477328906571593058184098361276861448369336040999082511251453253222092868232364758769626912329234136381239542346179419664659922644361391543299887919250587380989773730849622130178886212696828255333541703361010892399426985154793815860272399476743719230182573716863367198488407981058729074867041829668602028714736338600068792632192056083283930752534165430199103075896485709285384883481314762237961132722051209147838097956689901797566555195775723635692060215597465146048062845878415893139976788915200553408041186206703504639309630015361456742985664548201789546882150979504174209991992975205715903473427738168157219785229364155586688066583192849454302537150474860205423740707518269200027597871276478319529493559389234120544608763402500514014558560813075498995934718121841811854649204658846730360968204137810439054925677580931803764280130381807268717315918957117498651010816404999981954939817957912084506202250170283338575385080184923603944955682672462371711755123693484436944004736374775411040206527331701989504467033533984306106740503983482827479276739026841289803989859571526927020227855252437984373805506313660465951823353923453834752822540314363284834107387448182322325646201521414443231439207593243232200530337948088023893185445205851311436655271015130350666563680226110144294122709053557431963452975731689976055584695731296356334920103687885582362453074057367181654198457377593261923920541009134014121675150558137573495821956631674713172606214925308095903593857137190313305815359422039466554219833915586458028641713991387467230130677383363964198377906042681042821433142355654097919954333368384775726538157244568993516489865692703342377477861478067864015449042161526664512685713029415566293332318017458251512594236725010258163258709351241234142221260030770468319809143511908487818621425087148614688778681556110878794130394933661168383034881577778727223166346328754154958875543801708375225766956910427256291658631368739278709356789270701899339727012057716881957419647244037541075237672897415524799739737982565536454488746757805058551566798789844415494814357219076564049175345261746054906786338935771094958306118757437297010804064505619689279805011812195496316604990052116637618913010271861561826573653793022662856846813302062503428888881557168474523198329238749069610119649383622992387894310709198223595961489644055374911946766309938817412196736181777857787105927283187989049846432151661600571397448520832578796231937434743095575996226837289102948632955847954224492589413677530180366048704454367856034088157146305177110424206794651024424780571837473414739459459331268260899703235212211987338489778349973876869994605203468482662448562044764138497300550372736065974715989140051535273529052236223879772015693285936034894654385822149809499492416133565161291537835690617691737009801645322523136132462917494163515769271766417234267676789244643908966201658352574999357095936`
+// const data = `2374971804270526477833002468783965837992554564899874087591661303561346432389832047870524302186901344489362368642972767716416349990805756094923115719687656090691368051627957878187788907419297818953295185555346288172578594637886352753543271000481717080003254556962148594350559820352806251787713278744047402230989238559317351232114240089849934148895256488140236015024800731753594740948640957680138566468247224859669467819596919398964809164399637893729212452791889199675715949918925838319591794702333094022248132120531152523331442741730158840977243402215102904932650832502847295644794421419704633765033761284508863534321317394686768650111457751139630853448637215423705157211510636160227953566227527799608082928846103264491539001327407775670834868948113753614112563650255058316849200536533335903554984254814901522086937767458409075617572843449110393213525925388131214952874629655799772119820372255291052673056372346072235458198199995637720424196884145247220163810790179386390283738429482893152518286247124911446073389185062482901364671389605727763080854673156754021728522287806275420847159574631844674460263574901590412679291518508010087116598357407343835408554094619585212373168435612645646129147973594416508676872819776522537778717985070402222824965034768103900739105784663244748432502180989441389718131079445941981681118258324511923246198334046020123727749408128519721102477302359413240175102907322619462289965085963377744024233678337951462006962521823224880199210318367946130004264196899778609815012001799773327514133268825910089483612283510244566484854597156100473055413090101948456959122378865704840756793122956663218517626099291311352417342899623681483097817511136427210593032393600010728324905512596767095096153856032112835755780472808814199620390836980020899858288860556611564167406292139646289142056168261133256777093245980048335918156712295254776487472431445495668303900536289283098315798552328294391152828182614909451410115516297083658174657554955228963550255866282688308751041517464999930825273776417639569977754844191402927594739069037851707477839207593911886893016618794870530622356073909077832279869798641545167528509966656120623184120128052588408742941658045827255866966100249857968956536613250770326334844204927432961924987891433020671754710428050564671868464658436926086493709176888821257183419013229795869757265111599482263223604228286513011751601176504567030118257385997460972803240338899836840030438830725520798480181575861397469056536579877274090338750406459700907704031830137890544492015701251066934352867527112361743047684237105216779177819594030160887368311805926405114938744235859610328064947158936962470654636736991567663705830950312548447653861922078087824048793236971354828540758657075837209006713701763902429652486225300535997260665898927924843608750347193892239342462507130025307878412116604096773706728162016134101751551184021079984480254041743057914746472840768175369369852937574401874295943063507273467384747124843744395375119899278823903202010381949145094804675442110869084589592876721655764753871572233276245590041302887094585204427900634246823674277680009401177473636685542700515621164233992970974893989913447733956146698563285998205950467321954304`
+
+
+function verifyQR(data) {
+
+    const bigIntData = convertBase10ToBigInt(data)
+
+    const byteArray = convertBigIntToByteArray(bigIntData)
+    console.log("OM ~ file: demo3.js:72 ~ d ", byteArray);
+
+
+    const decompressByteArr = decompressByteArray(byteArray)
+    console.log("OM ~ file: demo3.js:76 ~ decompressByteArr", decompressByteArr);
+
+    let dilimiter = findDelimiter(decompressByteArr, 0)
+    console.log("OM ~ file: demo3.js:79 ~ da", dilimiter);
+
+    const Email_mobile_present_bit_indicator = {
+        0: "Not Email/Mobile",
+        1: "Only Email",
+        2: "Only Mobile",
+        3: "Both email/Mobile"
+    }
+    const isMobileOrEmailAvailable = readAndConvertToString(decompressByteArr, 0, dilimiter)
+    console.log("OM ~ file: demo3.js:83 ~ as1", Email_mobile_present_bit_indicator[isMobileOrEmailAvailable]);
+
+    const value = []
+    const userDetails = {
+        referenceId: "",
+        name: "",
+        dob: "",
+        gender: "",
+        careof: "",
+        address: {
+            district: "",
+            landmark: "",
+            house: "",
+            location: "",
+            pincode: "",
+            postoffice: "",
+            State: "",
+            Street: "",
+            Subdistrict: "",
+            VTC: ""
+        }
+    }
+
+    for (let i = 0; i < 15; i++) {
+        // dilimiter = dilimiter + 1
+        const nextDilimeter = findDelimiter(decompressByteArr, dilimiter + 1)
+        console.log("OM ~ file: demo3.js:93 ~ nextDilimeter", dilimiter);
+
+        const referenceId = readAndConvertToString(decompressByteArr, dilimiter + 1, nextDilimeter)
+        value.push(referenceId)
+        dilimiter = nextDilimeter
+        console.log("OM ~ file: demo3.js:96 ~ referenceId", referenceId);
+    }
+    console.log("OM ~ file: demo3.js:120 ~ dilimiter", dilimiter);
+
+    function extractPhoto(byteArray, isMobilePresent, isEmailPresent) {
+        const VTC_DELIMITER = dilimiter;
+        let photoStartIndex = VTC_DELIMITER + 1;
+        let photoEndIndex = byteArray.length - 1 - 256;
+
+        if (isMobilePresent) photoEndIndex -= 32;
+        if (isEmailPresent) photoEndIndex -= 32;
+        return byteArray.slice(photoStartIndex, photoEndIndex + 1);
+    }
+
+    const photoData = decompressByteArr.slice(dilimiter + 1, decompressByteArr.length - 1 - 256 - 32 - 32)
+    // const photoData = extractPhoto(decompressByteArr, true, false)
+
+    console.log("OM ~ file: demo3.js:125 ~ photoData", photoData);
+    console.log("OM ~ file: demo3.js:125 ~ photoData", Buffer.from(photoData).toString('base64'));
+
+    console.log("\n")
+
+    function generateHashMobileOrEmailId(mobileNoOrEmailId, aadhaarNo) {
+        let hash = `${mobileNoOrEmailId}`;
+        const times = aadhaarNo[aadhaarNo.length - 1] === '0' ? 1 : aadhaarNo[aadhaarNo.length - 1];
+        for (let i = 1; i <= times; i++) {
+            hash = crypto.createHash('sha256').update(hash).digest('hex');
+        }
+        return hash;
+    }
+
+
+    const mobileNo = '7544883037'//'9795357883';
+    const aadhaarNo = 'XXXX XXXX 4472';
+
+    const mobileHashCode = generateHashMobileOrEmailId(mobileNo, aadhaarNo)
+    console.log(mobileHashCode);
+
+    const mobile = readMobileEmail(decompressByteArr, isMobileOrEmailAvailable)
+    console.log("OM ~ file: demo3.js:123 ~ mobile", mobile);
+
+    console.log(mobileHashCode === mobile.mobile);
+
+
+    /* REad signature data */
+    const signature = readSignature(decompressByteArr)
+    console.log("OM ~ file: demo3.js:123 ~ signature", signature);
+    console.log("OM ~ file: demo3.js:123 ~ signature", signature.length);
+
+
+    // const publicKey = fs.readFileSync("./pub.pem", "utf-8");
+    const publicKey = fs.readFileSync("./uidai_auth_sign_prod_2023.cer", "utf-8");
+    // console.log("OM ~ file: demo3.js:153 ~ publicKey", publicKey);
+
+    // const publicKey = `-----BEGIN PUBLIC KEY-----
+    // MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1Ig2iA6b9jenLPTGogsT
+    // gLx4nv1p/V2T0q3RBa4gJDKrZt41bMEWaXkFUEuN5S+NtZvPbO/jJj2Wi1NvSQqV
+    // YTA/7Jy0hVUOWJpYev7/PFzAAUOgkotQsmiS8hhpR5IOssO+1KrYrd7Kki+ZLkN/
+    // 9PqaIEkrJhvEOP7wtNnF5JeHXbEFSz1fpHGRZIzZyogmQ89vaY9gXByG1MJzNqlp
+    // RhoahAHqZtvBbU9BHqpfFQFV58V7fvewaHc/K3LRs47D80FgcsRLWn7eNRdKnai+
+    // ozGwQQirRz+gKOOFslhQprTX3QSFkPJNiiMa42wPhUJvuMmTXE3ruzMQrJhDYt3/
+    // jQIDAQAB
+    // -----END PUBLIC KEY-----`
+
+    /* -----BEGIN PUBLIC KEY-----
+    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1Ig2iA6b9jenLPTGogsT
+    gLx4nv1p/V2T0q3RBa4gJDKrZt41bMEWaXkFUEuN5S+NtZvPbO/jJj2Wi1NvSQqV
+    YTA/7Jy0hVUOWJpYev7/PFzAAUOgkotQsmiS8hhpR5IOssO+1KrYrd7Kki+ZLkN/
+    9PqaIEkrJhvEOP7wtNnF5JeHXbEFSz1fpHGRZIzZyogmQ89vaY9gXByG1MJzNqlp
+    RhoahAHqZtvBbU9BHqpfFQFV58V7fvewaHc/K3LRs47D80FgcsRLWn7eNRdKnai+
+    ozGwQQirRz+gKOOFslhQprTX3QSFkPJNiiMa42wPhUJvuMmTXE3ruzMQrJhDYt3/
+    jQIDAQAB
+    -----END PUBLIC KEY-----
+     */
+
+    // Step 7: Convert certificate to base64 string
+    const certificateBase64 = Buffer.from(publicKey)
+
+    // Remove the signature value
+    const signedData = decompressByteArr.slice(0, -256);
+    console.log("OM ~ file: demo4.js:45 ~ signedData", signedData);
+
+    // Validate the signature and signed data
+    const isSignatureValid = crypto.verify('sha256WithRSAEncryption', signedData, publicKey, signature);
+    console.log("OM ~ file: demo4.js:49 ~ isSignatureValid", isSignatureValid);
+    return {
+        value, isSignatureValid
+    }
+}
+
+const express = require("express")
+const app = express()
+
+app.use(bodyParser.urlencoded({ extended: false }))
+
+// parse application/json
+app.use(bodyParser.json())
+app.use(cors())
+
+var options = {
+    root: path.join(__dirname)
+};
+app.get("/", (req, res) => {
+    res.sendFile("qr.html", options)
+})
+
+app.post('/verify-qr', (req, res) => {
+
+    const { qrData } = req.body;
+    console.log("OM ~ file: qr-verify.js:210 ~ app.post ~ req.body", qrData);
+
+    const d = verifyQR(qrData)
+    res.json({ "data": d })
+})
+
+
+const PORT = 4000 || process.env.PORT
+app.listen(PORT, () => {
+    console.log(`server running at ${PORT}`)
+})

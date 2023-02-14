@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="reader" width="600px"></div>
+
+    <!-- <input type="file" id="qr-input-file" accept="image/*"> -->
+
+    <input type="file" id="qr-input-file" accept="image/*">
+    <input type="button" id="verify" onclick="verify()" value="Verify QR">
+    <hr>
+
+    <div id="label"></div>
+    <!-- <input type="file" id="xml-input-file" accept="*"> -->
+    <script>
+        let html5QrcodeScanner = new Html5QrcodeScanner("reader",
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+        /* verbose= */ false);
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // handle the scanned code as you like, for example:
+            console.log(`Code matched = ${decodedText}`, decodedResult);
+            html5QrcodeScanner.clear()
+        }
+
+        function onScanFailure(error) {
+            // handle scan failure, usually better to ignore and keep scanning.
+            // for example:
+            console.log(`Code scan error = ${error}`);
+        }
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+
+
+
+        let qrData = ''
+        const html5QrCode = new Html5Qrcode(/* element id */ "reader");
+        // File based scanning
+        const fileinput = document.getElementById('qr-input-file');
+        fileinput.addEventListener('change', e => {
+            console.log("OM ~ file: qr.html:57 ~ e", e);
+            if (e.target.files.length == 0) {
+                // No file selected, ignore 
+                return;
+            }
+
+            const imageFile = e.target.files[0];
+            // Scan QR Code
+            html5QrCode.scanFile(imageFile, true)
+                .then(async decodedText => {
+                    // success, use decodedText
+                    console.log("decodedText", decodedText);
+                    qrData = decodedText;
+                })
+                .catch(err => {
+                    // failure, handle it.
+                    console.log(`Error scanning file. Reason: ${err}`)
+                });
+        });
+
+        async function verify() {
+            console.log("OM ~ file: qr.html:69 ~ verify ~ verify");
+            const res = await fetch('http://localhost:4000/verify-qr', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json;charset=utf-8'
+                },
+                body: JSON.stringify({ qrData })
+            });
+            const data = await res.json()
+            if (data) {
+                document.getElementById("label").textContent = `Signature Verified - ${data.data.isSignatureValid}, Name - ${data.data.value[1]}`
+            }
+            console.log("OM ~ file: qr.html:64 ~ data", data);
+            console.log("OM ~ file: qr.html:57 ~ res", res);
+        }
+    </script>
+</body>
+
+</html>
