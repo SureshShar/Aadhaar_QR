@@ -22,22 +22,24 @@
     <div id="label"></div>
     <!-- <input type="file" id="xml-input-file" accept="*"> -->
     <script>
-        // let html5QrcodeScanner = new Html5QrcodeScanner("reader",
-        //     { fps: 10, qrbox: { width: 250, height: 250 } },
-        // /* verbose= */ false);
+        let html5QrcodeScanner = new Html5QrcodeScanner("reader",
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+        /* verbose= */ true);
 
-        // function onScanSuccess(decodedText, decodedResult) {
-        //     // handle the scanned code as you like, for example:
-        //     console.log(`Code matched = ${decodedText}`, decodedResult);
-        //     html5QrcodeScanner.clear()
-        // }
+        function onScanSuccess(decodedText, decodedResult) {
+            // handle the scanned code as you like, for example:
+            console.log(`Code matched = ${decodedText}`, decodedResult);
+            document.getElementById("label").textContent = `Code matched = ${decodedText} - ${decodedResult}`
+            html5QrcodeScanner.clear()
+        }
 
-        // function onScanFailure(error) {
-        //     // handle scan failure, usually better to ignore and keep scanning.
-        //     // for example:
-        //     console.log(`Code scan error = ${error}`);
-        // }
-        // html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        function onScanFailure(error) {
+            // handle scan failure, usually better to ignore and keep scanning.
+            // for example:
+            document.getElementById("label").textContent = `Code scan error = ${error}`
+            console.log(`Code scan error = ${error}`);
+        }
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
 
         // const html5QrCode1 = new Html5Qrcode("reader1", true);
         // html5QrCode1.start(
@@ -61,16 +63,16 @@
         //         // Start failed, handle it.
         //     });
 
-        const html5QrCode1 = new Html5Qrcode(
-            "reader", { formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE] });
-        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-            /* handle success */
-            console.log("OM ~ file: index.html:67 ~ qrCodeSuccessCallback ~ decodedText, decodedResult", decodedText, decodedResult);
-        };
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        // const html5QrCode1 = new Html5Qrcode(
+        //     "reader", { formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE] });
+        // const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+        //     /* handle success */
+        //     console.log("OM ~ file: index.html:67 ~ qrCodeSuccessCallback ~ decodedText, decodedResult", decodedText, decodedResult);
+        // };
+        // const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-        // If you want to prefer front camera
-        html5QrCode1.start({ facingMode: "user" }, config, qrCodeSuccessCallback);
+        // // If you want to prefer front camera
+        // html5QrCode1.start({ facingMode: "user" }, config, qrCodeSuccessCallback);
 
 
         let qrData = ''
@@ -101,7 +103,8 @@
 
         async function verify() {
             console.log("OM ~ file: qr.html:69 ~ verify ~ verify");
-            const res = await fetch('http://192.168.2.183:4000/verify-qr', {
+            // const res = await fetch('http://192.168.2.183:4000/verify-qr', {
+            const res = await fetch('/verify-qr', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8'
