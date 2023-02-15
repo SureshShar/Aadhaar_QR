@@ -39,31 +39,42 @@
         // }
         // html5QrcodeScanner.render(onScanSuccess, onScanFailure);
 
-        const html5QrCode1 = new Html5Qrcode("reader1", true);
-        html5QrCode1.start(
-            { facingMode: "environment" },
-            {
-                fps: 10,    // Optional, frame per seconds for qr code scanning
-                qrbox: { width: 250, height: 250 }  // Optional, if you want bounded box UI
-            },
-            (decodedText, decodedResult) => {
-                console.log("OM ~ file: index.html:49 ~ decodedText, decodedResult", decodedText, decodedResult);
-                document.getElementById("label").textContent = decodedText, decodedResult
-                // do something when code is read
-            },
-            (errorMessage) => {
-                document.getElementById("label").textContent = "errorMessage " + errorMessage
+        // const html5QrCode1 = new Html5Qrcode("reader1", true);
+        // html5QrCode1.start(
+        //     { facingMode: "environment" },
+        //     {
+        //         fps: 10,    // Optional, frame per seconds for qr code scanning
+        //         qrbox: { width: 250, height: 250 }  // Optional, if you want bounded box UI
+        //     },
+        //     (decodedText, decodedResult) => {
+        //         console.log("OM ~ file: index.html:49 ~ decodedText, decodedResult", decodedText, decodedResult);
+        //         document.getElementById("label").textContent = decodedText, decodedResult
+        //         // do something when code is read
+        //     },
+        //     (errorMessage) => {
+        //         document.getElementById("label").textContent = "errorMessage " + errorMessage
 
-                console.log("OM ~ file: index.html:53 ~ errorMessage", errorMessage);
-                // parse error, ignore it.
-            })
-            .catch((err) => {
-                // Start failed, handle it.
-            });
+        //         console.log("OM ~ file: index.html:53 ~ errorMessage", errorMessage);
+        //         // parse error, ignore it.
+        //     })
+        //     .catch((err) => {
+        //         // Start failed, handle it.
+        //     });
+
+        const html5QrCode1 = new Html5Qrcode(
+            "reader", { formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE] });
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+            /* handle success */
+            console.log("OM ~ file: index.html:67 ~ qrCodeSuccessCallback ~ decodedText, decodedResult", decodedText, decodedResult);
+        };
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        // If you want to prefer front camera
+        html5QrCode1.start({ facingMode: "user" }, config, qrCodeSuccessCallback);
 
 
         let qrData = ''
-        const html5QrCode = new Html5Qrcode(/* element id */ "reader");
+        const html5QrCode = new Html5Qrcode(/* element id */ "reader", { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1 },);
         // File based scanning
         const fileinput = document.getElementById('qr-input-file');
         fileinput.addEventListener('change', e => {
@@ -74,6 +85,7 @@
             }
 
             const imageFile = e.target.files[0];
+            console.log("OM ~ file: index.html:88 ~ imageFile", imageFile);
             // Scan QR Code
             html5QrCode.scanFile(imageFile, true)
                 .then(async decodedText => {
@@ -89,7 +101,7 @@
 
         async function verify() {
             console.log("OM ~ file: qr.html:69 ~ verify ~ verify");
-            const res = await fetch('/verify-qr', {
+            const res = await fetch('http://192.168.2.183:4000/verify-qr', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8'
