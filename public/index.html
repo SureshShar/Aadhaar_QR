@@ -15,7 +15,14 @@
 
     <!-- <input type="file" id="qr-input-file" accept="image/*"> -->
 
-    <input type="file" id="qr-input-file" accept="image/*">
+    <input type="file" id="qr-input-file" accept="image/*"> <br />
+
+    <label for="qrCode">Enter Qr code</label>
+    <input type="text" name="qrCode" id="qrCode" max="infinite"> <br />
+
+    <label for="mobileNo">Enter Mobile no:</label>
+    <input type="number" name="mobileNo" id="mobileNo" value=""> <br /><br />
+
     <input type="button" id="verify" onclick="verify()" value="Verify QR">
     <hr>
 
@@ -102,6 +109,14 @@
         });
 
         async function verify() {
+
+            const payload = {
+                qrData,
+                qrCode: document.getElementById("qrCode").value,
+                mobileNo: document.getElementById("mobileNo").value
+            }
+            console.log("OM ~ file: ", document.getElementById("qrCode").value);
+            console.log("OM ~ file: index.html:110 ~ payload", payload);
             console.log("OM ~ file: qr.html:69 ~ verify ~ verify");
             // const res = await fetch('http://192.168.2.183:4000/verify-qr', {
             const res = await fetch('/verify-qr', {
@@ -109,11 +124,11 @@
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8'
                 },
-                body: JSON.stringify({ qrData })
+                body: JSON.stringify(payload)
             });
             const data = await res.json()
             if (data) {
-                document.getElementById("label").textContent = `Signature Verified - ${data.data.isSignatureValid}, Name - ${data.data.value[1]}`
+                document.getElementById("label").textContent = `Signature Verified - ${data.data.isSignatureValid}, Name - ${data.data.value[1]}, Mobile no. verified: ${data.data.isMobileOrEmailVerified}`
             }
             console.log("OM ~ file: qr.html:64 ~ data", data);
             console.log("OM ~ file: qr.html:57 ~ res", res);
